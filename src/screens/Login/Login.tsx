@@ -1,6 +1,6 @@
 import {StyleSheet, View, TouchableOpacity} from 'react-native';
 import {Text} from 'react-native-paper';
-import {NavigationProps} from '../../../App';
+import {NavigationProps} from "../../routes/index";
 import LoginForm from '../../component/Forms/LoginForm';
 import GoogleLogin from '../../component/GoogleLogin';
 
@@ -27,7 +27,7 @@ const Home = ({navigation, route}: NavigationProps) => {
             </View>
           </View>
           <View>
-            <LoginForm />
+            <LoginForm screenName={"Chat"} />
           </View>
           <View className="bg-black h-1"></View>
           <View>
