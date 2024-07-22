@@ -22,10 +22,10 @@ const Chat=({userDetails}:{userDetails:UserInterface})=>{
                 </View>
                 <View>
                     <View>
-                        <Text>{userDetails.name}</Text>
+                        <Text className="text-white" >{userDetails.name}</Text>
                     </View>
                     <View>
-                        <Text>Last Message</Text>
+                        <Text className="text-white" >Last Message</Text>
                     </View>
                 </View>
                

@@ -13,7 +13,6 @@ const App = () => {
   },[])
 
   const data=process.env.SERVER_URL
-  console.log(data)
   
   return (
     <>

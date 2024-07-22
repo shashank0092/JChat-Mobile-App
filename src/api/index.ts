@@ -2,9 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 const apiClient=axios.create({
-    baseURL:"http://192.168.117.164:8000/api/v1/",
+    baseURL:"http://192.168.112.156:8000/api/v1/",
     withCredentials:true,
-    timeout:120000
+    timeout:120000,
+    // headers: {
+    //     'Content-Type': 'multipart/form-data'
+    // }
 })
 
 apiClient.interceptors.request.use(
@@ -22,7 +25,7 @@ apiClient.interceptors.request.use(
 
 
 const loginUser=(data:{email:string,password:string})=>{
-    console.log("ruuning api call")
+    console.log(data.email,data.password)
     return apiClient.post("/user/login",data)
 }
 
@@ -46,11 +49,36 @@ const GetAllChat=()=>{
     return apiClient.get("/chat/")
 }
 
+const GetAllMessages=(chatId:string|undefined)=>{
+    return apiClient.get(`/message/getMessages/${chatId}`)
+}
+
+const SendChat=(data:{chatId:string,content:string,attachments?:File[]})=>{
+    try{
+        const formData=new FormData()
+    if(data.content){
+        formData.append("content",data.content)
+    }
+
+    return apiClient.post(`/message/sendMessage/${data.chatId}`,formData,{
+        headers:{
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+    
+    }
+    catch(err){
+        console.log(err,"this is index")
+    }
+}
+
 export{
     loginUser,
     uploadImage,
     registerUser,
     SearchUser,
     CreateAndGetOneOnOneChat,
-    GetAllChat
+    GetAllChat,
+    GetAllMessages,
+    SendChat
 }

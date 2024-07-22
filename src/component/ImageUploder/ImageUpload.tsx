@@ -19,7 +19,7 @@ const ImageUpload = ({setImagePath}) => {
       fileName: file.name,
       ...res,
     });
-    console.log("this is upload image",uploadImage)
+  
     setUploadFileURL(uploadImage.url)
     setImagePath(uploadImage.filePath)
   }

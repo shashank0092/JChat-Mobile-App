@@ -42,7 +42,8 @@ const AuthProvider:React.FC<{children:React.ReactNode}> =({children})=>{
         setLoading(true)
         
         try{
-            console.log("working this code")
+            
+            
             const loginDetails:AxiosResponse=await loginUser(data)
             setUser(loginDetails.data.data.user)
             await AsyncStorage.setItem("isFirstLaunch","loggedIn")
@@ -66,6 +67,7 @@ const AuthProvider:React.FC<{children:React.ReactNode}> =({children})=>{
 
             console.log(err,"this is an error")
             if(axios.isAxiosError(err)){
+                console.log(err.response)
                 if(err.response?.status==401){
                     Toast.show(
                         {

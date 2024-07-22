@@ -8,8 +8,9 @@ const useSocket=()=>useContext(SocketContext)
 
 const getSocket=async()=>{
     const JSONToken=await AsyncStorage.getItem("acessToken")
+
     return socketio(
-        "http://192.168.215.164:8000/",
+        "http://192.168.112.156:8000",
         {
             withCredentials:true,
             auth:{JSONToken}
@@ -19,10 +20,15 @@ const getSocket=async()=>{
 }
 
 const SocketProvider:React.FC<{children:React.ReactNode}> =({children})=>{
-    const[socket,setSocket]=useState<ReturnType<typeof socketio>|null  >(null)
+    const[socket,setSocket]=useState<ReturnType<typeof socketio>|null>(null)
+
+    const ConnectToSocket=async()=>{
+        setSocket(await getSocket())
+    }
 
     useEffect(()=>{
-        getSocket()
+        ConnectToSocket()
+        // console.log(socket,"this is socket")
     },[])
     return(
         <SocketContext.Provider value={{socket}} >

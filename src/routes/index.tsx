@@ -1,16 +1,18 @@
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Login from '../screens/Login/Login';
 import Register from '../screens/Register/Register';
 import Chat from '../screens/Chats/Chat';
-import {AuthProvider} from '../context/AuthContext';
+import { AuthProvider } from '../context/AuthContext';
 import ConnectionChat from '../screens/Chats/TabScreens/Chats/Screens/ConnectionChat';
-import {ActivityIndicator, Avatar, IconButton} from 'react-native-paper';
+import { ActivityIndicator, Avatar, IconButton } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useEffect, useState} from 'react';
-import { View,Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
 import AddContact from '../screens/Chats/TabScreens/Chats/Screens/AddContact';
+import OptionsModal from '../component/OptionsModal/OptionsModal';
+import { SocketProvider } from '../context/SocketContext';
 
 
 
@@ -20,7 +22,7 @@ export type rootStackParamList = {
   Register: undefined;
   Chat: undefined;
   ConnectionChat: undefined;
-  AddContact:{contactType:string}
+  AddContact: { contactType: string }
 };
 
 export type NavigationProps = NativeStackScreenProps<rootStackParamList>;
@@ -28,8 +30,8 @@ export type NavigationProps = NativeStackScreenProps<rootStackParamList>;
 
 const Routes = () => {
 
-  const [isFirstLaunch, setIsFirstLaunch] = useState<null | boolean >(null);
-
+  const [isFirstLaunch, setIsFirstLaunch] = useState<null | boolean>(null);
+  const [showOptionModal, setShowOptionModal] = useState(false)
   const Stack = createNativeStackNavigator<rootStackParamList>();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const Routes = () => {
         const value = await AsyncStorage.getItem('isFirstLaunch');
         if (value === null) {
           setIsFirstLaunch(true);
-          
+
         } else {
           setIsFirstLaunch(false);
         }
@@ -61,67 +63,74 @@ const Routes = () => {
   return (
     <>
       <NavigationContainer>
-        <AuthProvider>
-            <Stack.Navigator initialRouteName={isFirstLaunch?"Login":"Chat"}  >
+        <SocketProvider>
+          <AuthProvider>
+            <View className={`${showOptionModal ? "flex" : "hidden"} absolute left-[75vw] top-10  z-[1]`} >
+              <OptionsModal />
+            </View>
+            <Stack.Navigator initialRouteName={isFirstLaunch ? "Login" : "Chat"}  >
               <Stack.Screen
                 name="Login"
                 component={Login}
-                options={{headerShown: false}}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Register"
                 component={Register}
-                options={{headerShown: false}}
+                options={{ headerShown: false }}
               />
 
               <Stack.Screen
                 name="Chat"
                 component={Chat}
-                options={{headerShown: false}}
-              />
-              <Stack.Screen
-                name="ConnectionChat"
-                component={ConnectionChat}
                 options={{
-                  headerTitle: 'User Name',
-                  headerBackVisible: true,
+                  headerTitle: 'JChat',
+                  headerBackVisible: false,
                   headerTintColor: 'white',
-                  headerLeft: () => (
-                    <Avatar.Image
-                      source={{
-                        uri: 'https://ik.imagekit.io/shashank007/user.jpg?updatedAt=1717232443506',
-                      }}
-                      size={40}
-                      className="mr-5"
-                    />
-                  ),
+
                   headerRight: () => (
-                    <IconButton icon={'dots-vertical'} iconColor="white" />
+                    <IconButton
+                      icon={'dots-vertical'}
+                      iconColor="white"
+                      onPress={
+                        () => {
+                          setShowOptionModal((prev) => !prev)
+                        }
+
+                      }
+                    />
                   ),
                   headerStyle: {
                     backgroundColor: '#1A212E',
                   },
                   headerTitleStyle: {
                     color: 'white',
+                    fontSize: 28
                   },
                 }}
+              />
+              <Stack.Screen
+                name="ConnectionChat"
+                component={ConnectionChat}
+
               />
               <Stack.Screen
                 name='AddContact'
                 component={AddContact}
                 options={{
-                  headerTitle:"New Chat",
+                  headerTitle: "New Chat",
                   headerTintColor: 'white',
-                  headerStyle:{
-                    backgroundColor:"#1A212E"
+                  headerStyle: {
+                    backgroundColor: "#1A212E"
                   },
-                  headerTitleStyle:{
-                    color:"white"
+                  headerTitleStyle: {
+                    color: "white"
                   }
                 }}
               />
             </Stack.Navigator>
-        </AuthProvider>
+          </AuthProvider>
+        </SocketProvider>
       </NavigationContainer>
     </>
   );
