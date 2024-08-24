@@ -1,9 +1,16 @@
 import { UserInterface } from "./user";
 
+interface Attachment {
+    url: string;
+    type: string;
+    name:string;
+    size:Number
+  }
+
 export interface ChatMessageInterface{
     _id:string,
-    sender:Pick<UserInterface,"_id"|"email"|"imagePath">,
-    attachments:[{url:string,localPath:string}]|null;
+    sender:Pick<UserInterface,"_id"|"email"|"attachments">,
+    attachments:[Attachment];
     content:string;
     chat:string;
     createdAt:string;

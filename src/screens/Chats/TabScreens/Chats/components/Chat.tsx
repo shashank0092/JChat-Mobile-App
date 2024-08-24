@@ -3,12 +3,20 @@ import { View } from "react-native"
 import { Avatar, Text } from "react-native-paper"
 import { UserInterface } from "../../../../../types/user"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useEffect, useState } from "react"
+import { GetS3KeyImageParser } from "../../../../../util/ImagesKeyParser"
 
 const Chat=({userDetails}:{userDetails:UserInterface})=>{
 
-    const fetchUserDetails=async()=>{
-        const details=await AsyncStorage.getItem("currentChat")
-        console.log(details)
+    const[imageLink,setImageLink]=useState("")
+
+    useEffect(()=>{
+        ImageSet()
+    },[])
+    
+    const ImageSet=async()=>{
+        const s3Link=await GetS3KeyImageParser(userDetails.attachment[0].url)
+        setImageLink(s3Link)
     }
     return(
         <>
@@ -16,7 +24,7 @@ const Chat=({userDetails}:{userDetails:UserInterface})=>{
                 <View   >  
                     <Avatar.Image
                     size={50}
-                    source={{uri:`https://ik.imagekit.io/shashank007/${userDetails.imagePath}`}}
+                    source={{uri:`${imageLink}`}}
                     className="ml-2"
                     />
                 </View>

@@ -16,7 +16,7 @@ const AuthContext=createContext<{
     error:boolean|null,
     sucess:boolean|null,
     user:UserInterface|null,
-    register:(data:{name:string,email:string,password:string,phoneNumber:string,about:string,imagePath:string})=>Promise<void>
+    register:(data:{name:string,email:string,password:string,phoneNumber:string,about:string,attachments:{uri:"",type:"",name:""}})=>Promise<void>
     
 }>({
     login:async()=>{},
@@ -94,11 +94,11 @@ const AuthProvider:React.FC<{children:React.ReactNode}> =({children})=>{
         }
    }
 
-   const register=async(data:{name:string,email:string,password:string,phoneNumber:string,about:string,imagePath:string})=>{
+   const register=async(data:{name:string,email:string,password:string,phoneNumber:string,about:string,attachments:{uri:"",type:"",name:""}})=>{
     setLoading(true)
     try{
         const RegisterUser:AxiosResponse=await registerUser(data)
-        console.log(RegisterUser,"this is register user")
+        // console.log(RegisterUser,"this is register user")
         Toast.show(
             {
                 type:ALERT_TYPE.SUCCESS,

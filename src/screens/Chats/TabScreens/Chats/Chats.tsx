@@ -56,8 +56,7 @@ const Chats = () => {
   useEffect(()=>{
 
     if(!socket) return;
-    console.log(socket,"this is socket")
-
+   
     socket.on(SocketEvents.CONNECTED_EVENT,onConnect)
     socket.on(SocketEvents.DISCONNECT_EVENT,onDisConnect)
 

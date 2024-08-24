@@ -10,7 +10,8 @@ const RegisterForm = () => {
 
   const{register,loading}=useAuth()
   const[showPassword,setShowPassword]=useState(false)
-  const[imagePath,setImagePath]=useState<string>("") 
+  const[attachments,setAttachments]=useState() 
+  console.log(attachments,"these all are attachments")
   return (
     <>
       <Formik
@@ -28,7 +29,7 @@ const RegisterForm = () => {
           const email=values.email
           const password=values.password
           const phoneNumber=values.phoneNumber
-          register({name,about,email,password,phoneNumber,imagePath})
+          register({name,about,email,password,phoneNumber,attachments})
         }}
         validationSchema={null}>
         {({
@@ -105,7 +106,7 @@ const RegisterForm = () => {
                 />
             </View>
             <View>
-              <ImageUpload setImagePath={setImagePath } />
+              <ImageUpload setAttachments={setAttachments } />
             </View>
             <View>
               <Button 

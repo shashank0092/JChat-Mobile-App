@@ -1,63 +1,71 @@
-import {StyleSheet, View, ImageBackground, Image} from 'react-native';
-import {ScrollView} from 'react-native';
-import {Text} from 'react-native-paper';
+import { StyleSheet, View, ImageBackground, Image } from 'react-native';
+import { ScrollView } from 'react-native';
+import { Text } from 'react-native-paper';
 import SendMessage from '../components/SendMessage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { rootStackParamList} from "../../../../../routes/index"
-import {NativeStackNavigationProp} from "@react-navigation/native-stack"
+import { rootStackParamList } from "../../../../../routes/index"
+import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { useNavigation } from '@react-navigation/native';
-import { Avatar, IconButton} from 'react-native-paper';
+import { Avatar, IconButton } from 'react-native-paper';
 import { useSocket } from '../../../../../context/SocketContext';
 import { GetAllMessages } from '../../../../../api';
-import { isArray } from 'lodash';
-import { ChatMessageInterface,ChatListInterface } from '../../../../../types/chats';
+import { ChatMessageInterface, ChatListInterface } from '../../../../../types/chats';
 import SocketEvents from '../../../../../util/SocketEvents';
+import Typing from '../../../../../component/Typing/Typing';
+import { GetS3KeyImageParser } from '../../../../../util/ImagesKeyParser';
+import { IMAGES_EXTENSTIONS, VIDEOS_EXTENSTION } from '../../../../../util/Mediatypes';
+import Video, { VideoRef } from 'react-native-video';
 
 
-type ConnectionChat=NativeStackNavigationProp<rootStackParamList,"ConnectionChat">
+
+
+type ConnectionChat = NativeStackNavigationProp<rootStackParamList, "ConnectionChat">
 
 const ConnectionChat = () => {
 
-  const[userDetails,setUserDetails]=useState()
-  const[currentChatDetails,setCurrentChatDetails]=useState<ChatListInterface|null>(null)
-  const[mainUserEmail,setMainUserEmail]=useState()
-  const[messages,setMessages]=useState<ChatMessageInterface[]>([])
-  const navigation=useNavigation<ConnectionChat>()
-  const[unreadMessage,setUnreadMessage]=useState<ChatMessageInterface[]>([])
-  const {socket}=useSocket()
+  const [userDetails, setUserDetails] = useState()
+  const [isTyping, setIsTypig] = useState(false)
+  const [currentChatDetails, setCurrentChatDetails] = useState<ChatListInterface | null>(null)
+  const [mainUserEmail, setMainUserEmail] = useState()
+  const [messages, setMessages] = useState<ChatMessageInterface[]>([])
+  const navigation = useNavigation<ConnectionChat>()
+  const [unreadMessage, setUnreadMessage] = useState<ChatMessageInterface[]>([])
+  const [imageLink, setImageLink] = useState("")
+  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
+  const { socket } = useSocket()
+  console.log(imageLink,"this is ir")
+
+  const RunningChat = async () => {
+    const AsyncStorageCurrentChat = await AsyncStorage.getItem("currentChat")
 
 
-  const RunningChat=async()=>{
-    const AsyncStorageCurrentChat=await AsyncStorage.getItem("currentChat")
-    
-    
-    const ChatUserDetails=JSON.parse(AsyncStorageCurrentChat)
+    const ChatUserDetails = JSON.parse(AsyncStorageCurrentChat)
     setCurrentChatDetails(ChatUserDetails)
 
-    const AsyncStorageMainUser=await AsyncStorage.getItem("user")
-    const MainUser=await JSON.parse(AsyncStorageMainUser)
+    const AsyncStorageMainUser = await AsyncStorage.getItem("user")
+    const MainUser = await JSON.parse(AsyncStorageMainUser)
 
-    
-    const MainUserEmail=await MainUser.email
-    const deatils=ChatUserDetails.participants.map((participant)=>{
-      if(participant.email!=MainUserEmail){
+
+    const MainUserEmail = await MainUser.email
+    const deatils = ChatUserDetails.participants.map((participant) => {
+      if (participant.email != MainUserEmail) {
         return participant
       }
-    }).filter(e=>e)
- 
-    
+    }).filter(e => e)
+
+
     setUserDetails(
-      ChatUserDetails.participants.map((participant)=>{
-      if(participant.email!=MainUserEmail){
-        return participant
-      }
-    }).filter(e=>e)
-  
-  )
-   
-    setMainUserEmail(MainUserEmail)
+      ChatUserDetails.participants.map((participant) => {
+        if (participant.email != MainUserEmail) {
+          return participant
+        }
+      }).filter(e => e)
 
+    )
+
+    setMainUserEmail(MainUserEmail)
+    let imageUrl = await GetS3KeyImageParser(deatils[0].attachment[0].url)
     navigation.setOptions({
       headerTitle: deatils[0].name,
       headerBackVisible: true,
@@ -65,7 +73,7 @@ const ConnectionChat = () => {
       headerLeft: () => (
         <Avatar.Image
           source={{
-            uri: `https://ik.imagekit.io/shashank007/${deatils[0].imagePath}`,
+            uri: `${imageUrl}`,
           }}
           size={40}
           className="mr-5"
@@ -83,75 +91,172 @@ const ConnectionChat = () => {
     })
   }
 
-  const getMessages=async()=>{
-    const AsyncStorageCurrentChat=await AsyncStorage.getItem("currentChat")
-    const ChatUserDetails=JSON.parse(AsyncStorageCurrentChat)
-    const chatUserId=await JSON.stringify(ChatUserDetails._id).replace(/"/g, '')
-    const GET_ALL_MESSAGES=await GetAllMessages(chatUserId)
-    socket?.emit(SocketEvents.JOIN_CHAT_EVENT,chatUserId)
+  const getMessages = async () => {
+    const AsyncStorageCurrentChat = await AsyncStorage.getItem("currentChat")
+    const ChatUserDetails = JSON.parse(AsyncStorageCurrentChat)
+    const chatUserId = await JSON.stringify(ChatUserDetails._id).replace(/"/g, '')
+    const GET_ALL_MESSAGES = await GetAllMessages(chatUserId)
+    socket?.emit(SocketEvents.JOIN_CHAT_EVENT, chatUserId)
+    console.log(GET_ALL_MESSAGES.data.data.data,"this is messages")
     setMessages(GET_ALL_MESSAGES.data.data.data)
+    const urls: { [key: string]: string } = {};
+    for (const message of GET_ALL_MESSAGES.data.data.data) {
+      if (message.attachments?.length > 0) {
+        for (const attachment of message.attachments) {
+          if (!urls[attachment.url]) {
+            urls[attachment.url] = await GetS3KeyImageParser(attachment.url);
+          }
+        }
+      }
+    }
+    setImageUrls(urls);
   }
 
- 
 
-  useEffect(()=>{
+
+  useEffect(() => {
     RunningChat()
-    
-  },[])
+  }, [])
 
-  useEffect(()=>{getMessages()},[])
-  useEffect(()=>{},[messages])
+  useEffect(() => { getMessages() }, [])
+  useEffect(() => { }, [messages])
 
-  const onMessageRecived=(message:ChatMessageInterface)=>{
-    
-    if(message.chat!=currentChatDetails?._id){
-      setUnreadMessage((prev)=>[message,...prev])
+  const onMessageRecived = (message: ChatMessageInterface) => {
+
+    if (message.chat != currentChatDetails?._id) {
+      setUnreadMessage((prev) => [message, ...prev])
     }
-    else{
-      setMessages((prev)=>[...prev,message])
+    else {
+      setMessages((prev) => [...prev, message])
     }
   }
 
-  useEffect(()=>{
-    socket?.on(SocketEvents.MESSAGE_RECEIVED_EVENT,onMessageRecived)
-  },[socket])
+  const SenderStartTyping = (chatId: String) => {
+    if (chatId !== currentChatDetails?._id) return;
+    setIsTypig(true)
+  }
+
+  const SenderStopTyping = (chatId: string) => {
+    if (chatId !== currentChatDetails?._id) return
+    setIsTypig(false)
+  }
+
+  useEffect(() => {
+    socket?.on(SocketEvents.MESSAGE_RECEIVED_EVENT, onMessageRecived)
+    socket?.on(SocketEvents.TYPING_EVENT, SenderStartTyping)
+    socket?.on(SocketEvents.STOP_TYPING_EVENT, SenderStopTyping)
+  }, [socket])
+  // console.log(imageLink,"this is")
   return (
     <>
       <ImageBackground
         source={require('../../../../../assets/chatbg.jpg')}
         style={styles.backgroundImage}
-        >
+      >
         <ScrollView className="" >
           {
-            messages?.map((message)=>{
-              return(
+            messages?.map((message) => {
+
+              return (
                 <View className='flex mt-2 ' >
                   {
-                    message.sender.email!==mainUserEmail?
-                    (
-                      <View className='flex  justify-end'>
-                        <View className=' bg-yellow-300 self-end mr-3 p-3 rounded-lg '>
-                          <Text className='text-white font-bold' >{message.content}</Text>
+                    message?.sender?.email !== mainUserEmail ?
+                      (
+
+                        <View className='flex  justify-end'>
+                          {
+                            message.attachments?.length > 0 ? (
+
+                              <View className=' bg-yellow-300 self-end mr-3 p-3 rounded-lg ' >
+                                <Image
+                                  source={{ uri: imageUrls[message.attachments[0].url] || ''}}
+                                  height={200}
+                                  width={200}
+                                />
+                              </View>
+                            ) : (
+                              <>
+                                <View className=' bg-yellow-300 self-end mr-3 p-3 rounded-lg '>
+                                  <Text className='text-white font-bold' >{message.content}</Text>
+                                </View>
+                              </>
+                            )
+                          }
                         </View>
-                      </View>
-                    ):(
-                      <View>
-                        <View className='text-black bg-white self-start ml-3 p-3 rounded-lg' >
-                          <Text className='text-black font-bold' >{message.content}</Text>
+                      ) : (
+                        <View>
+                          <View className='text-black bg-white self-start ml-3 p-3 rounded-lg' >
+                            {
+                              message.attachments?.length > 0 ? (
+
+                                <View>
+                                  {
+                                    IMAGES_EXTENSTIONS.includes(message.attachments[0].type) ?
+                                      (<>
+                                        <Image
+                                          source={{ uri: imageUrls[message.attachments[0].url] || '' }}
+                                          height={200}
+                                          width={200}
+                                        />
+                                      </>) :
+                                      (<></>)
+                                  }
+                                  {
+                                    VIDEOS_EXTENSTION.includes(message.attachments[0].type) ?
+                                      (<>
+                                        <Video
+                                          source={{ uri: imageUrls[message.attachments[0].url] || '' }}
+                                          style={{ height: 200, width: 200 }}
+                                          controls={true}
+                                        />
+                                      </>) :
+                                      (<></>)
+                                  }
+                                  {
+                                    !IMAGES_EXTENSTIONS.includes(message.attachments[0].type) &&
+                                      !VIDEOS_EXTENSTION.includes(message.attachments[0].type)
+                                      ?
+                                      (<>
+                                        <View >
+                                          <View className="" >
+                                            <Text className='text-black' >{message.attachments[0].name}</Text>
+                                          </View>
+                                        </View>
+                                      </>) : (<></>)
+                                  }
+
+
+                                </View>
+                              ) :
+                                (
+                                  <Text className='text-black font-bold' >{message.content}</Text>
+                                )
+
+                            }
+                          </View>
                         </View>
-                      </View>
-                    )
+                      )
                   }
                 </View>
               )
             })
           }
+          <View className='p-3' >
+            {
+              isTyping ? (
+                <Typing />
+              ) :
+                (
+                  <></>
+                )
+            }
+          </View>
         </ScrollView>
         <SendMessage
-        socket={socket}
-        setMessages={setMessages}
-        messages={messages}
-        currentChatDetails={currentChatDetails}
+          socket={socket}
+          setMessages={setMessages}
+          messages={messages}
+          currentChatDetails={currentChatDetails}
         />
       </ImageBackground>
     </>

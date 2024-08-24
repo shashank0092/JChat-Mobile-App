@@ -1,11 +1,15 @@
-import { Dispatch, SetStateAction,useState,useRef, useEffect } from 'react';
-import {View,TouchableOpacity} from 'react-native';
-import {IconButton, Text, TextInput} from 'react-native-paper';
+import { Dispatch, SetStateAction, useState, useRef, useEffect } from 'react';
+import { View, TouchableOpacity, Image } from 'react-native';
+import { Icon, IconButton, Text, TextInput } from 'react-native-paper';
 import { Socket } from 'socket.io-client';
-import { ChatMessageInterface,ChatListInterface } from '../../../../../types/chats';
+import { ChatMessageInterface, ChatListInterface } from '../../../../../types/chats';
 import SocketEvents from '../../../../../util/SocketEvents';
-import {SendChat} from "../../../../../api/index"
+import { SendChat } from "../../../../../api/index"
+import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
+import Video, { VideoRef } from 'react-native-video';
+import SpeechToText from './SpeechToText';
+import CameraMedia from './CameraMedia';
 
 
 const SendMessage = ({
@@ -13,116 +17,201 @@ const SendMessage = ({
   setMessages,
   messages,
   currentChatDetails
-}:{
-  socket:Socket|null
-  setMessages:Dispatch<SetStateAction<ChatMessageInterface[]>>
-  messages:ChatMessageInterface[],
-  currentChatDetails:ChatListInterface|null
+}: {
+  socket: Socket | null
+  setMessages: Dispatch<SetStateAction<ChatMessageInterface[]>>
+  messages: ChatMessageInterface[],
+  currentChatDetails: ChatListInterface | null
 }
 
 ) => {
 
   const [isTyping, setIsTyping] = useState(false);
   const [selfTyping, setSelfTyping] = useState(false);
-  const [message,setMessage]=useState<string>("")
+  const [message, setMessage] = useState<string>("")
+  const [imageUri, setImageUri] = useState("")
+  const [selectedFiles, setSelectedFiles] = useState({ type: '', uri: "", name: "" })
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
 
-  useEffect(()=>{
-    if(socket){
-      socket.on(SocketEvents.TYPING_EVENT,handleOnSocketStopTyping)
-      socket.on(SocketEvents.STOP_TYPING_EVENT,handleOnSocketStopTyping)
+
+  useEffect(() => {
+    if (socket) {
+      socket.on(SocketEvents.TYPING_EVENT, handleOnSocketStopTyping)
+      socket.on(SocketEvents.STOP_TYPING_EVENT, handleOnSocketStopTyping)
     }
-    else{
+    else {
       console.log("not getting socket")
     }
 
-    if(socket){
-      return()=>{
-        socket.off(SocketEvents.TYPING_EVENT,handleOnSocketTyping)
-        socket.off(SocketEvents.STOP_TYPING_EVENT,handleOnSocketStopTyping)
+    if (socket) {
+      return () => {
+        socket.off(SocketEvents.TYPING_EVENT, handleOnSocketTyping)
+        socket.off(SocketEvents.STOP_TYPING_EVENT, handleOnSocketStopTyping)
       }
     }
-  },[socket])
+  }, [socket])
 
- 
-
-  const handleOnSocketTyping=()=>{
+  const handleOnSocketTyping = () => {
     setIsTyping(true)
   }
-  const handleOnSocketStopTyping=()=>{
+  const handleOnSocketStopTyping = () => {
     setIsTyping(false)
   }
 
-  const handleMessageChange=(text:string)=>{
+  const handleMessageChange = (text: string) => {
     setMessage(text)
-    if(!socket) return
+    console.log("handling messgae", message)
+    if (!socket) return
 
-    if(!selfTyping){
+    if (!selfTyping) {
       setSelfTyping(true)
-      socket.emit(SocketEvents.TYPING_EVENT,currentChatDetails._id)
+      socket.emit(SocketEvents.TYPING_EVENT, currentChatDetails._id)
     }
 
-    if(typingTimeoutRef.current){
+    if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
-    const timerlength=30000
-    typingTimeoutRef.current=setTimeout(()=>{
-      socket.emit(SocketEvents.STOP_TYPING_EVENT,currentChatDetails._id)
-    },timerlength)
+    const timerlength = 3000
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit(SocketEvents.STOP_TYPING_EVENT, currentChatDetails._id)
+    }, timerlength)
   }
 
-  const MessageSend=async()=>{
-    if(!currentChatDetails?._id||!socket){
+console.log(message,"this is changing is message")
+  async function openFileSelector() {
+    try {
+      const res = await DocumentPicker.pick({
+        type: [DocumentPicker.types.allFiles],
+      });
+
+      setImageUri(res[0].uri)
+      console.log(res, "this is res")
+      setSelectedFiles(
+        {
+          uri: res[0].uri,
+          type: res[0].type,
+          name: res[0].name
+
+        }
+      )
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+      } else {
+      }
+    }
+  }
+  const MessageSend = async () => {
+    setImageUri("")
+    setSelectedFiles("")
+    setMessage("")
+    if (!currentChatDetails?._id || !socket) {
       return
     }
-    
-    try{
-      const SEND_CHAT_API_CALL=await SendChat({chatId:currentChatDetails._id,content:message})
-      // console.log(SEND_CHAT_API_CALL)
-      const SEND_CHAT_RESPONSE=await SEND_CHAT_API_CALL?.data
+    console.log(message, "this is sending message")
+    try {
+
+      const SEND_CHAT_API_CALL = await SendChat({ chatId: currentChatDetails._id, content: message, attachments: selectedFiles })
+      const SEND_CHAT_RESPONSE = await SEND_CHAT_API_CALL?.data
       console.log(SEND_CHAT_API_CALL?.data.data)
-      setMessages((prev)=>[...prev,SEND_CHAT_API_CALL?.data.data.data])
-      // console.log(SEND_CHAT_RESPONSE,"THIS IS RESPONSE")
-
-   
+      setMessages((prev) => [...prev, SEND_CHAT_API_CALL?.data.data.data])
     }
-    catch(err){
-      console.log(err,"this is error")
-      if(axios.isAxiosError(err)){
-        console.log(err.response)
-    }
+    catch (err) {
+      console.log(err, "this is error")
+      if (axios.isAxiosError(err)) {
+        console.log(err.toJSON())
+      }
     }
 
-    socket.emit(SocketEvents.STOP_TYPING_EVENT,currentChatDetails._id)
+    socket.emit(SocketEvents.STOP_TYPING_EVENT, currentChatDetails._id)
 
   }
   return (
     <>
-      <View className='flex flex-row ml-2 mr-2 mb-1 gap-2' >
-        <View className="flex flex-row bg-chat-child-container flex-1 rounded-full ">
-          <TouchableOpacity>
-            <IconButton icon={'emoticon'} />
+
+      {
+        imageUri == "" ? (<></>) : (
+          <TouchableOpacity
+            onLongPress={() => setImageUri("")}
+            className='absolute bg-slate-600 self-start p-5  rounded-lg bottom-16 left-10'
+          >
+            {
+              imageUri && selectedFiles?.type?.includes("image") ? (
+                <>
+                  <Image
+                    source={{ uri: imageUri }}
+                    width={70}
+                    height={70}
+                    className=''
+                  />
+                </>) : (
+                <></>
+              )
+            }
+            {
+              imageUri && selectedFiles?.type?.includes("video") ? (
+                <>
+                  <Video
+                    source={{ uri: selectedFiles.uri }}
+                    style={{ height: 170, width: 170 }}
+                    controls={true}
+                  />
+                </>
+              ) :
+                (<></>)
+            }
+            {
+              imageUri && !(selectedFiles?.type?.includes("image")) && !(selectedFiles?.type?.includes("video")) ?
+                (<View className='flex flex-row justify-center items-center gap-2' >
+                  <View>
+                    <Icon
+                      source={"file-document-outline"}
+                      size={20}
+                    />
+                  </View>
+                  <View>
+                    <Text>{selectedFiles.name}</Text>
+                  </View>
+                </View>) :
+                (<></>)
+            }
           </TouchableOpacity>
+        )
+      }
+      <View className='flex flex-row ml-2 mr-2 mb-5 gap-2' >
+
+        <View className="flex flex-row bg-chat-child-container flex-1 rounded-full ">
+        
+           <View>
+           <SpeechToText
+              setMessage={setMessage}
+            />
+           </View>
+
           <TouchableOpacity>
-            <IconButton icon={'attachment'} />
+            <IconButton
+              icon={'attachment'}
+              onPress={() => openFileSelector()}
+            />
           </TouchableOpacity>
           <View className='flex-1' >
-            <TextInput 
-            className='bg-chat-child-container bg-transparent'
-            onChangeText={text=>handleMessageChange(text)}
-            placeholder='Write message'
-            underlineColor='transparent'
-            activeUnderlineColor='transparent'
+            <TextInput
+              className='bg-chat-child-container bg-transparent'
+              onChangeText={text => handleMessageChange(text)}
+              placeholder='Write message'
+              underlineColor='transparent'
+              activeUnderlineColor='transparent'
+              value={message}
             />
           </View>
           <TouchableOpacity>
-            <IconButton icon={'camera'} />
-          </TouchableOpacity>
+            <IconButton icon={'camera'} onPress={()=>console.log("shukla boi")} />
+            </TouchableOpacity>
         </View>
         <View>
-            <TouchableOpacity className='bg-green-600 rounded-full' onPress={()=>MessageSend()} >
-                <IconButton icon={"send"} />
-            </TouchableOpacity>
+          <TouchableOpacity className='bg-green-600 rounded-full' onPress={() => MessageSend()} >
+            <IconButton icon={"send"} />
+          </TouchableOpacity>
         </View>
       </View>
     </>

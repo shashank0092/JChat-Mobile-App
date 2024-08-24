@@ -7,42 +7,40 @@ import {ImageAuthenticator} from '../../util/ImageAuthenticator';
 import {imagekit} from '../../util/Imagekit';
 import {DocumentPickerResponse} from 'react-native-document-picker';
 
-const ImageUpload = ({setImagePath}) => {
+const ImageUpload = ({setAttachments}) => {
   const [uploadFileURI, setUploadFileURL] = useState<undefined | string>(
-    undefined,
+    undefined
   );
 
-  const uploadFile=async(file)=> {
-    const res = await ImageAuthenticator();
-    const uploadImage = await imagekit.upload({
-      file,
-      fileName: file.name,
-      ...res,
-    });
   
-    setUploadFileURL(uploadImage.url)
-    setImagePath(uploadImage.filePath)
-  }
-  async function uploadFileToImagekit(fileData) {
-    try {
-      const uploadedFile = await uploadFile(fileData[0]);
-    } catch (err) {}
-  }
 
   async function openFileSelector() {
     try {
       const res = await DocumentPicker.pick({
-        type: [DocumentPicker.types.allFiles],
+        type: [DocumentPicker.types.images],
       });
-      uploadFileToImagekit(res);
+      
+      setAttachments(
+        {
+          uri:res[0].uri,
+          type:res[0].type,
+          name:res[0].name
+
+        }
+      )
+      
+      setUploadFileURL(res[0].uri)
+      
+      
+      
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
       } else {
       }
     }
   }
-
-  return (
+  
+  return (  
     <>
       <View className="flex flex-row items-center justify-between">
         <Button 
