@@ -11,6 +11,7 @@ export interface ChatMessageInterface{
     _id:string,
     sender:Pick<UserInterface,"_id"|"email"|"attachments">,
     attachments:[Attachment];
+    mediaLink:{url: string; type: string,name:string,size:Number}[];
     content:string;
     chat:string;
     createdAt:string;

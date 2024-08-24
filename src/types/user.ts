@@ -11,6 +11,7 @@ export interface UserInterface{
     email:string,
     name:string,
     attachment:[Attachment],
+    mediaLink:{url: string; type: string,name:string,size:Number}[];
     about:string,
     phoneNumber:string,
     createdAt:string,

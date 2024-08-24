@@ -13,7 +13,6 @@ import { GetAllMessages } from '../../../../../api';
 import { ChatMessageInterface, ChatListInterface } from '../../../../../types/chats';
 import SocketEvents from '../../../../../util/SocketEvents';
 import Typing from '../../../../../component/Typing/Typing';
-import { GetS3KeyImageParser } from '../../../../../util/ImagesKeyParser';
 import { IMAGES_EXTENSTIONS, VIDEOS_EXTENSTION } from '../../../../../util/Mediatypes';
 import Video, { VideoRef } from 'react-native-video';
 
@@ -32,7 +31,7 @@ const ConnectionChat = () => {
   const navigation = useNavigation<ConnectionChat>()
   const [unreadMessage, setUnreadMessage] = useState<ChatMessageInterface[]>([])
   const [imageLink, setImageLink] = useState("")
-  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
+  
   const { socket } = useSocket()
   console.log(imageLink,"this is ir")
 
@@ -65,7 +64,7 @@ const ConnectionChat = () => {
     )
 
     setMainUserEmail(MainUserEmail)
-    let imageUrl = await GetS3KeyImageParser(deatils[0].attachment[0].url)
+    let imageUrl = deatils[0].mediaLink[0].url
     navigation.setOptions({
       headerTitle: deatils[0].name,
       headerBackVisible: true,
@@ -99,20 +98,8 @@ const ConnectionChat = () => {
     socket?.emit(SocketEvents.JOIN_CHAT_EVENT, chatUserId)
     console.log(GET_ALL_MESSAGES.data.data.data,"this is messages")
     setMessages(GET_ALL_MESSAGES.data.data.data)
-    const urls: { [key: string]: string } = {};
-    for (const message of GET_ALL_MESSAGES.data.data.data) {
-      if (message.attachments?.length > 0) {
-        for (const attachment of message.attachments) {
-          if (!urls[attachment.url]) {
-            urls[attachment.url] = await GetS3KeyImageParser(attachment.url);
-          }
-        }
-      }
-    }
-    setImageUrls(urls);
+   
   }
-
-
 
   useEffect(() => {
     RunningChat()
@@ -165,11 +152,11 @@ const ConnectionChat = () => {
 
                         <View className='flex  justify-end'>
                           {
-                            message.attachments?.length > 0 ? (
+                            message?.mediaLink?.length > 0 ? (
 
                               <View className=' bg-yellow-300 self-end mr-3 p-3 rounded-lg ' >
                                 <Image
-                                  source={{ uri: imageUrls[message.attachments[0].url] || ''}}
+                                  source={{ uri: message.mediaLink[0].url || ''}}
                                   height={200}
                                   width={200}
                                 />
@@ -191,10 +178,10 @@ const ConnectionChat = () => {
 
                                 <View>
                                   {
-                                    IMAGES_EXTENSTIONS.includes(message.attachments[0].type) ?
+                                    IMAGES_EXTENSTIONS.includes(message.mediaLink[0].type) ?
                                       (<>
                                         <Image
-                                          source={{ uri: imageUrls[message.attachments[0].url] || '' }}
+                                          source={{ uri: message.mediaLink[0].url || '' }}
                                           height={200}
                                           width={200}
                                         />
@@ -202,10 +189,10 @@ const ConnectionChat = () => {
                                       (<></>)
                                   }
                                   {
-                                    VIDEOS_EXTENSTION.includes(message.attachments[0].type) ?
+                                    VIDEOS_EXTENSTION.includes(message.mediaLink[0].type) ?
                                       (<>
                                         <Video
-                                          source={{ uri: imageUrls[message.attachments[0].url] || '' }}
+                                          source={{ uri:message.mediaLink[0].url || '' }}
                                           style={{ height: 200, width: 200 }}
                                           controls={true}
                                         />
@@ -213,13 +200,13 @@ const ConnectionChat = () => {
                                       (<></>)
                                   }
                                   {
-                                    !IMAGES_EXTENSTIONS.includes(message.attachments[0].type) &&
-                                      !VIDEOS_EXTENSTION.includes(message.attachments[0].type)
+                                    !IMAGES_EXTENSTIONS.includes(message.mediaLink[0].type) &&
+                                      !VIDEOS_EXTENSTION.includes(message.mediaLink[0].type)
                                       ?
                                       (<>
                                         <View >
                                           <View className="" >
-                                            <Text className='text-black' >{message.attachments[0].name}</Text>
+                                            <Text className='text-black' >{message.mediaLink[0].name}</Text>
                                           </View>
                                         </View>
                                       </>) : (<></>)
