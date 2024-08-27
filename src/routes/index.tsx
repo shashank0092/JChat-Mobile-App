@@ -8,12 +8,12 @@ import { AuthProvider } from '../context/AuthContext';
 import ConnectionChat from '../screens/Chats/TabScreens/Chats/Screens/ConnectionChat';
 import { ActivityIndicator, Avatar, IconButton } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import AddContact from '../screens/Chats/TabScreens/Chats/Screens/AddContact';
 import OptionsModal from '../component/OptionsModal/OptionsModal';
 import { SocketProvider } from '../context/SocketContext';
-
+import CameraScreen from "../screens/Chats/TabScreens/Chats/Screens/CameraScreen"
 
 
 
@@ -22,7 +22,8 @@ export type rootStackParamList = {
   Register: undefined;
   Chat: undefined;
   ConnectionChat: undefined;
-  AddContact: { contactType: string }
+  AddContact: { contactType: string };
+  CameraMedia:{setSelectedFiles:Dispatch<SetStateAction<{uri:string,name:string,type:string}>>};
 };
 
 export type NavigationProps = NativeStackScreenProps<rootStackParamList>;
@@ -127,6 +128,11 @@ const Routes = () => {
                     color: "white"
                   }
                 }}
+              />
+              <Stack.Screen
+                name='CameraMedia'
+                component={CameraScreen}
+                options={{ headerShown: false }}
               />
             </Stack.Navigator>
           </AuthProvider>

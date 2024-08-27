@@ -10,7 +10,7 @@ const getSocket=async()=>{
     const JSONToken=await AsyncStorage.getItem("acessToken")
 
     return socketio(
-        "http://192.168.155.156:8000/",
+        "http://192.168.138.156:8000/",
         {
             withCredentials:true,
             auth:{JSONToken}

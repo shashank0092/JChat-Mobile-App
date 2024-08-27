@@ -9,9 +9,12 @@ import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
 import Video, { VideoRef } from 'react-native-video';
 import SpeechToText from './SpeechToText';
-import CameraMedia from './CameraMedia';
+import { useNavigation,NavigationProp } from '@react-navigation/native';
+import {rootStackParamList} from "../../../../../routes/index"
 
 
+
+type NavigationProps = NavigationProp<rootStackParamList>;
 const SendMessage = ({
   socket,
   setMessages,
@@ -32,8 +35,8 @@ const SendMessage = ({
   const [imageUri, setImageUri] = useState("")
   const [selectedFiles, setSelectedFiles] = useState({ type: '', uri: "", name: "" })
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
 
+  console.log(selectedFiles,"this is real")
 
   useEffect(() => {
     if (socket) {
@@ -51,6 +54,8 @@ const SendMessage = ({
       }
     }
   }, [socket])
+
+  const navigation = useNavigation<NavigationProps>();
 
   const handleOnSocketTyping = () => {
     setIsTyping(true)
@@ -78,7 +83,7 @@ const SendMessage = ({
     }, timerlength)
   }
 
-console.log(message,"this is changing is message")
+  console.log(message, "this is changing is message")
   async function openFileSelector() {
     try {
       const res = await DocumentPicker.pick({
@@ -101,10 +106,15 @@ console.log(message,"this is changing is message")
       }
     }
   }
+
+  useEffect(()=>{
+    if(selectedFiles.uri){
+      setImageUri(selectedFiles.uri)
+    }
+  },[selectedFiles])
   const MessageSend = async () => {
     setImageUri("")
     setSelectedFiles("")
-    setMessage("")
     if (!currentChatDetails?._id || !socket) {
       return
     }
@@ -181,12 +191,12 @@ console.log(message,"this is changing is message")
       <View className='flex flex-row ml-2 mr-2 mb-5 gap-2' >
 
         <View className="flex flex-row bg-chat-child-container flex-1 rounded-full ">
-        
-           <View>
-           <SpeechToText
+
+          <View>
+            <SpeechToText
               setMessage={setMessage}
             />
-           </View>
+          </View>
 
           <TouchableOpacity>
             <IconButton
@@ -205,8 +215,8 @@ console.log(message,"this is changing is message")
             />
           </View>
           <TouchableOpacity>
-            <IconButton icon={'camera'} onPress={()=>console.log("shukla boi")} />
-            </TouchableOpacity>
+            <IconButton icon={'camera'} onPress={() =>navigation.navigate("CameraMedia",{setSelectedFiles:setSelectedFiles})} />
+          </TouchableOpacity>
         </View>
         <View>
           <TouchableOpacity className='bg-green-600 rounded-full' onPress={() => MessageSend()} >

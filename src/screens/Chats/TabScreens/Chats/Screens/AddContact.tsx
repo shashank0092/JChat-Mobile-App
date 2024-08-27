@@ -12,7 +12,7 @@ type Props = {
 };
 
 const AddContact: React.FC<Props> = ({route}) => {
-  const {contactType} = route.params;
+  const {contactType} = route.params
   return (
     <>
       <View className="h-[100vh] bg-chat-container ">
